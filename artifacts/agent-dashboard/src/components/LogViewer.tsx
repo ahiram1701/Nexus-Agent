@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { Terminal, Activity, CheckCircle2 } from "lucide-react";
-import type { AgentLogEntry } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { AgentLog } from "@/types/agent";
 
 interface LogViewerProps {
-  logs: AgentLogEntry[];
+  logs: AgentLog[];
 }
 
 export function LogViewer({ logs }: LogViewerProps) {
@@ -35,9 +35,7 @@ export function LogViewer({ logs }: LogViewerProps) {
               key={log.id}
               className="group relative pl-6 pb-6 border-l border-white/10 last:border-transparent last:pb-0"
             >
-              {/* Timeline node */}
               <div className="absolute left-[-5px] top-1 w-2 h-2 rounded-full bg-primary/50 group-hover:bg-primary group-hover:shadow-[0_0_8px_rgba(6,182,212,0.8)] transition-all" />
-              
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-xs font-mono text-muted-foreground">
                   {format(new Date(log.timestamp), "HH:mm:ss.SSS")}
@@ -46,7 +44,6 @@ export function LogViewer({ logs }: LogViewerProps) {
                   ID: {log.id}
                 </span>
               </div>
-              
               <div className="bg-black/30 border border-white/5 rounded-xl p-4 space-y-3 group-hover:border-white/10 transition-colors">
                 <p className="text-sm text-gray-200 leading-relaxed">
                   <span className="text-muted-foreground mr-2">{"// Thought:"}</span>

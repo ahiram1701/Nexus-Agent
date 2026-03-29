@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Settings, Target, Clock } from "lucide-react";
-import type { AgentConfig } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { AgentConfig } from "@/types/agent";
 
 interface ConfigPanelProps {
-  config?: AgentConfig;
+  config?: AgentConfig | null;
   onUpdate: (config: AgentConfig) => void;
   isUpdating: boolean;
 }
@@ -12,16 +12,15 @@ interface ConfigPanelProps {
 export function ConfigPanel({ config, onUpdate, isUpdating }: ConfigPanelProps) {
   const [open, setOpen] = useState(false);
   const [goal, setGoal] = useState(config?.goal || "");
-  const [interval, setInterval] = useState(config?.intervalSeconds?.toString() || "10");
+  const [interval, setIntervalVal] = useState(config?.intervalSeconds?.toString() || "30");
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!config) return;
-    
     onUpdate({
       ...config,
       goal,
-      intervalSeconds: parseInt(interval, 10) || 10,
+      intervalSeconds: parseInt(interval, 10) || 30,
     });
     setOpen(false);
   };
@@ -29,7 +28,7 @@ export function ConfigPanel({ config, onUpdate, isUpdating }: ConfigPanelProps) 
   return (
     <div className="glass-panel rounded-3xl p-6 relative overflow-hidden group">
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none" />
-      
+
       <div className="flex items-center justify-between mb-6 relative z-10">
         <h3 className="font-display font-semibold text-lg text-white flex items-center gap-2">
           <Target className="w-5 h-5 text-primary" />
@@ -38,7 +37,7 @@ export function ConfigPanel({ config, onUpdate, isUpdating }: ConfigPanelProps) 
         <Dialog open={open} onOpenChange={(val) => {
           if (val && config) {
             setGoal(config.goal);
-            setInterval(config.intervalSeconds.toString());
+            setIntervalVal(config.intervalSeconds.toString());
           }
           setOpen(val);
         }}>
@@ -67,10 +66,10 @@ export function ConfigPanel({ config, onUpdate, isUpdating }: ConfigPanelProps) 
                 </label>
                 <input
                   type="number"
-                  min="1"
+                  min="5"
                   max="3600"
                   value={interval}
-                  onChange={(e) => setInterval(e.target.value)}
+                  onChange={(e) => setIntervalVal(e.target.value)}
                   className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                   required
                 />
@@ -97,7 +96,7 @@ export function ConfigPanel({ config, onUpdate, isUpdating }: ConfigPanelProps) 
         </div>
         <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
           <Clock className="w-3 h-3" />
-          Runs every {config?.intervalSeconds || 0}s
+          Runs every {config?.intervalSeconds || 0}s · via puter.ai
         </div>
       </div>
     </div>

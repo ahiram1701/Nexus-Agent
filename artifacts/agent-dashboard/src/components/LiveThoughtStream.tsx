@@ -1,18 +1,17 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { BrainCircuit, Cpu, Zap, Loader2 } from "lucide-react";
-import type { AgentLogEntry } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { AgentLog } from "@/types/agent";
 
 interface LiveThoughtStreamProps {
-  latestLog?: AgentLogEntry;
+  latestLog?: AgentLog;
   isThinking: boolean;
 }
 
 export function LiveThoughtStream({ latestLog, isThinking }: LiveThoughtStreamProps) {
   return (
     <div className="glass-panel rounded-3xl p-6 md:p-8 relative overflow-hidden group">
-      {/* Decorative background glow */}
       <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl opacity-50 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-      
+
       <div className="flex items-center justify-between mb-6 relative z-10">
         <h2 className="text-xl md:text-2xl font-display font-bold text-white flex items-center gap-3">
           <BrainCircuit className="w-6 h-6 text-primary" />
@@ -61,23 +60,18 @@ export function LiveThoughtStream({ latestLog, isThinking }: LiveThoughtStreamPr
                   "{latestLog.thought}"
                 </p>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-black/40 border border-white/5 rounded-xl p-4">
                   <div className="text-xs font-mono text-primary mb-2 flex items-center gap-2">
                     <Zap className="w-3 h-3" /> Action
                   </div>
-                  <p className="text-sm text-gray-300 font-mono break-all">
-                    {latestLog.action}
-                  </p>
+                  <p className="text-sm text-gray-300 font-mono break-all">{latestLog.action}</p>
                 </div>
                 <div className="bg-black/40 border border-white/5 rounded-xl p-4">
                   <div className="text-xs font-mono text-accent mb-2 flex items-center gap-2">
                     <BrainCircuit className="w-3 h-3" /> Result
                   </div>
-                  <p className="text-sm text-gray-300 font-mono break-all">
-                    {latestLog.result}
-                  </p>
+                  <p className="text-sm text-gray-300 font-mono break-all">{latestLog.result}</p>
                 </div>
               </div>
             </motion.div>
