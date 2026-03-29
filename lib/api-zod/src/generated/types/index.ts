@@ -6,4 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./agentConfig";
+export * from "./agentCycleResult";
+export * from "./agentLogEntry";
+export * from "./agentLogsResponse";
+export * from "./agentMemory";
+export * from "./getAgentLogsParams";
 export * from "./healthStatus";
+export * from "./updateMemoryRequest";

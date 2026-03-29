@@ -1,6 +1,5 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
   description: API specification
@@ -10,6 +9,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: agent
+    description: Autonomous agent operations
 paths:
   /healthz:
     get:
@@ -24,6 +25,99 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /agent/memory:
+    get:
+      operationId: getMemory
+      tags: [agent]
+      summary: Get agent memory
+      responses:
+        "200":
+          description: Current memory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentMemory"
+    put:
+      operationId: updateMemory
+      tags: [agent]
+      summary: Update agent memory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMemoryRequest"
+      responses:
+        "200":
+          description: Updated memory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentMemory"
+
+  /agent/run:
+    post:
+      operationId: runAgentCycle
+      tags: [agent]
+      summary: Run one agent cycle
+      responses:
+        "200":
+          description: Agent cycle result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentCycleResult"
+
+  /agent/logs:
+    get:
+      operationId: getAgentLogs
+      tags: [agent]
+      summary: Get agent activity logs
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of log entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentLogsResponse"
+
+  /agent/config:
+    get:
+      operationId: getAgentConfig
+      tags: [agent]
+      summary: Get agent configuration
+      responses:
+        "200":
+          description: Agent config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentConfig"
+    put:
+      operationId: updateAgentConfig
+      tags: [agent]
+      summary: Update agent configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentConfig"
+      responses:
+        "200":
+          description: Updated config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentConfig"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +128,85 @@ components:
       required:
         - status
 
+    AgentMemory:
+      type: object
+      properties:
+        content:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - content
+        - updatedAt
+
+    UpdateMemoryRequest:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+
+    AgentCycleResult:
+      type: object
+      properties:
+        thought:
+          type: string
+        action:
+          type: string
+        result:
+          type: string
+        newMemory:
+          type: string
+        timestamp:
+          type: string
+      required:
+        - thought
+        - action
+        - result
+        - newMemory
+        - timestamp
+
+    AgentLogEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        thought:
+          type: string
+        action:
+          type: string
+        result:
+          type: string
+        timestamp:
+          type: string
+      required:
+        - id
+        - thought
+        - action
+        - result
+        - timestamp
+
+    AgentLogsResponse:
+      type: object
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentLogEntry"
+      required:
+        - logs
+
+    AgentConfig:
+      type: object
+      properties:
+        intervalSeconds:
+          type: integer
+        goal:
+          type: string
+        isRunning:
+          type: boolean
+      required:
+        - intervalSeconds
+        - goal
+        - isRunning

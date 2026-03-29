@@ -8,3 +8,42 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface AgentMemory {
+  content: string;
+  updatedAt: string;
+}
+
+export interface UpdateMemoryRequest {
+  content: string;
+}
+
+export interface AgentCycleResult {
+  thought: string;
+  action: string;
+  result: string;
+  newMemory: string;
+  timestamp: string;
+}
+
+export interface AgentLogEntry {
+  id: number;
+  thought: string;
+  action: string;
+  result: string;
+  timestamp: string;
+}
+
+export interface AgentLogsResponse {
+  logs: AgentLogEntry[];
+}
+
+export interface AgentConfig {
+  intervalSeconds: number;
+  goal: string;
+  isRunning: boolean;
+}
+
+export type GetAgentLogsParams = {
+  limit?: number;
+};

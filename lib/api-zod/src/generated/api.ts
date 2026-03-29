@@ -14,3 +14,79 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary Get agent memory
+ */
+export const GetMemoryResponse = zod.object({
+  content: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Update agent memory
+ */
+export const UpdateMemoryBody = zod.object({
+  content: zod.string(),
+});
+
+export const UpdateMemoryResponse = zod.object({
+  content: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Run one agent cycle
+ */
+export const RunAgentCycleResponse = zod.object({
+  thought: zod.string(),
+  action: zod.string(),
+  result: zod.string(),
+  newMemory: zod.string(),
+  timestamp: zod.string(),
+});
+
+/**
+ * @summary Get agent activity logs
+ */
+export const getAgentLogsQueryLimitDefault = 50;
+
+export const GetAgentLogsQueryParams = zod.object({
+  limit: zod.coerce.number().default(getAgentLogsQueryLimitDefault),
+});
+
+export const GetAgentLogsResponse = zod.object({
+  logs: zod.array(
+    zod.object({
+      id: zod.number(),
+      thought: zod.string(),
+      action: zod.string(),
+      result: zod.string(),
+      timestamp: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary Get agent configuration
+ */
+export const GetAgentConfigResponse = zod.object({
+  intervalSeconds: zod.number(),
+  goal: zod.string(),
+  isRunning: zod.boolean(),
+});
+
+/**
+ * @summary Update agent configuration
+ */
+export const UpdateAgentConfigBody = zod.object({
+  intervalSeconds: zod.number(),
+  goal: zod.string(),
+  isRunning: zod.boolean(),
+});
+
+export const UpdateAgentConfigResponse = zod.object({
+  intervalSeconds: zod.number(),
+  goal: zod.string(),
+  isRunning: zod.boolean(),
+});

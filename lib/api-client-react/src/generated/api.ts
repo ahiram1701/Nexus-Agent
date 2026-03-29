@@ -5,18 +5,29 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  AgentConfig,
+  AgentCycleResult,
+  AgentLogsResponse,
+  AgentMemory,
+  GetAgentLogsParams,
+  HealthStatus,
+  UpdateMemoryRequest,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +110,492 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get agent memory
+ */
+export const getGetMemoryUrl = () => {
+  return `/api/agent/memory`;
+};
+
+export const getMemory = async (
+  options?: RequestInit,
+): Promise<AgentMemory> => {
+  return customFetch<AgentMemory>(getGetMemoryUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMemoryQueryKey = () => {
+  return [`/api/agent/memory`] as const;
+};
+
+export const getGetMemoryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMemory>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMemory>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMemoryQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMemory>>> = ({
+    signal,
+  }) => getMemory({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMemory>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMemoryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMemory>>
+>;
+export type GetMemoryQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get agent memory
+ */
+
+export function useGetMemory<
+  TData = Awaited<ReturnType<typeof getMemory>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMemory>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMemoryQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update agent memory
+ */
+export const getUpdateMemoryUrl = () => {
+  return `/api/agent/memory`;
+};
+
+export const updateMemory = async (
+  updateMemoryRequest: UpdateMemoryRequest,
+  options?: RequestInit,
+): Promise<AgentMemory> => {
+  return customFetch<AgentMemory>(getUpdateMemoryUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateMemoryRequest),
+  });
+};
+
+export const getUpdateMemoryMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMemory>>,
+    TError,
+    { data: BodyType<UpdateMemoryRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateMemory>>,
+  TError,
+  { data: BodyType<UpdateMemoryRequest> },
+  TContext
+> => {
+  const mutationKey = ["updateMemory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateMemory>>,
+    { data: BodyType<UpdateMemoryRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateMemory(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateMemoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateMemory>>
+>;
+export type UpdateMemoryMutationBody = BodyType<UpdateMemoryRequest>;
+export type UpdateMemoryMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update agent memory
+ */
+export const useUpdateMemory = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMemory>>,
+    TError,
+    { data: BodyType<UpdateMemoryRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateMemory>>,
+  TError,
+  { data: BodyType<UpdateMemoryRequest> },
+  TContext
+> => {
+  return useMutation(getUpdateMemoryMutationOptions(options));
+};
+
+/**
+ * @summary Run one agent cycle
+ */
+export const getRunAgentCycleUrl = () => {
+  return `/api/agent/run`;
+};
+
+export const runAgentCycle = async (
+  options?: RequestInit,
+): Promise<AgentCycleResult> => {
+  return customFetch<AgentCycleResult>(getRunAgentCycleUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getRunAgentCycleMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runAgentCycle>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof runAgentCycle>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["runAgentCycle"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runAgentCycle>>,
+    void
+  > = () => {
+    return runAgentCycle(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RunAgentCycleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runAgentCycle>>
+>;
+
+export type RunAgentCycleMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Run one agent cycle
+ */
+export const useRunAgentCycle = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runAgentCycle>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof runAgentCycle>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getRunAgentCycleMutationOptions(options));
+};
+
+/**
+ * @summary Get agent activity logs
+ */
+export const getGetAgentLogsUrl = (params?: GetAgentLogsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/agent/logs?${stringifiedParams}`
+    : `/api/agent/logs`;
+};
+
+export const getAgentLogs = async (
+  params?: GetAgentLogsParams,
+  options?: RequestInit,
+): Promise<AgentLogsResponse> => {
+  return customFetch<AgentLogsResponse>(getGetAgentLogsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAgentLogsQueryKey = (params?: GetAgentLogsParams) => {
+  return [`/api/agent/logs`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetAgentLogsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAgentLogs>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetAgentLogsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAgentLogs>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAgentLogsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgentLogs>>> = ({
+    signal,
+  }) => getAgentLogs(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAgentLogs>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAgentLogsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAgentLogs>>
+>;
+export type GetAgentLogsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get agent activity logs
+ */
+
+export function useGetAgentLogs<
+  TData = Awaited<ReturnType<typeof getAgentLogs>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetAgentLogsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAgentLogs>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAgentLogsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get agent configuration
+ */
+export const getGetAgentConfigUrl = () => {
+  return `/api/agent/config`;
+};
+
+export const getAgentConfig = async (
+  options?: RequestInit,
+): Promise<AgentConfig> => {
+  return customFetch<AgentConfig>(getGetAgentConfigUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAgentConfigQueryKey = () => {
+  return [`/api/agent/config`] as const;
+};
+
+export const getGetAgentConfigQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAgentConfig>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAgentConfig>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAgentConfigQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgentConfig>>> = ({
+    signal,
+  }) => getAgentConfig({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAgentConfig>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAgentConfigQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAgentConfig>>
+>;
+export type GetAgentConfigQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get agent configuration
+ */
+
+export function useGetAgentConfig<
+  TData = Awaited<ReturnType<typeof getAgentConfig>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAgentConfig>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAgentConfigQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update agent configuration
+ */
+export const getUpdateAgentConfigUrl = () => {
+  return `/api/agent/config`;
+};
+
+export const updateAgentConfig = async (
+  agentConfig: AgentConfig,
+  options?: RequestInit,
+): Promise<AgentConfig> => {
+  return customFetch<AgentConfig>(getUpdateAgentConfigUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(agentConfig),
+  });
+};
+
+export const getUpdateAgentConfigMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAgentConfig>>,
+    TError,
+    { data: BodyType<AgentConfig> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateAgentConfig>>,
+  TError,
+  { data: BodyType<AgentConfig> },
+  TContext
+> => {
+  const mutationKey = ["updateAgentConfig"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateAgentConfig>>,
+    { data: BodyType<AgentConfig> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateAgentConfig(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateAgentConfigMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateAgentConfig>>
+>;
+export type UpdateAgentConfigMutationBody = BodyType<AgentConfig>;
+export type UpdateAgentConfigMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update agent configuration
+ */
+export const useUpdateAgentConfig = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAgentConfig>>,
+    TError,
+    { data: BodyType<AgentConfig> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateAgentConfig>>,
+  TError,
+  { data: BodyType<AgentConfig> },
+  TContext
+> => {
+  return useMutation(getUpdateAgentConfigMutationOptions(options));
+};
