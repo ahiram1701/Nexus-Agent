@@ -48,8 +48,15 @@ export function Dashboard() {
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-        {/* Left: Neural stream + logs */}
-        <div className="xl:col-span-5 space-y-6 flex flex-col">
+        {/* Left: Chat + Neural stream + logs */}
+        <div className="xl:col-span-8 space-y-6 flex flex-col">
+          <div className="h-[480px]">
+            <ChatPanel
+              messages={chatMessages as Array<{ id: number; role: "user" | "agent"; content: string; timestamp: string }>}
+              onSend={sendChatMessage}
+              isSending={isSendingChat}
+            />
+          </div>
           <LiveThoughtStream 
             latestLog={latestLog} 
             isThinking={isRunningCycle} 
@@ -57,19 +64,8 @@ export function Dashboard() {
           <LogViewer logs={logs} />
         </div>
 
-        {/* Center: Chat */}
-        <div className="xl:col-span-4" style={{ minHeight: "600px" }}>
-          <div className="h-full" style={{ minHeight: "600px" }}>
-            <ChatPanel
-              messages={chatMessages as Array<{ id: number; role: "user" | "agent"; content: string; timestamp: string }>}
-              onSend={sendChatMessage}
-              isSending={isSendingChat}
-            />
-          </div>
-        </div>
-
         {/* Right: Config + Memory */}
-        <div className="xl:col-span-3 flex flex-col gap-6">
+        <div className="xl:col-span-4 flex flex-col gap-6">
           <ConfigPanel 
             config={config} 
             onUpdate={(newConfig) => updateConfig({ data: newConfig })}
