@@ -29,7 +29,7 @@ export function AgentHeader({ config, onToggleRun, onRunNow, isRunCyclePending }
         </div>
         <div>
           <h1 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">
-            Nexus Agent
+            Ahiram AI Agent
           </h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="relative flex h-2.5 w-2.5">
