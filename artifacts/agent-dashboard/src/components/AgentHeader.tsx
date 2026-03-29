@@ -1,8 +1,8 @@
 import { Power, Play, Square, RefreshCcw } from "lucide-react";
-import type { AgentConfig } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { AgentConfig } from "@/types/agent";
 
 interface AgentHeaderProps {
-  config?: AgentConfig;
+  config?: AgentConfig | null;
   onToggleRun: () => void;
   onRunNow: () => void;
   isRunCyclePending: boolean;
@@ -13,11 +13,10 @@ export function AgentHeader({ config, onToggleRun, onRunNow, isRunCyclePending }
 
   return (
     <header className="glass-panel rounded-3xl p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden z-20">
-      {/* Background visual element */}
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-        <img 
+        <img
           src={`${import.meta.env.BASE_URL}images/ai-bg.png`}
-          alt="Tech Background" 
+          alt="Tech Background"
           className="w-full h-full object-cover mix-blend-screen"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-card via-card/90 to-transparent" />
@@ -29,7 +28,7 @@ export function AgentHeader({ config, onToggleRun, onRunNow, isRunCyclePending }
         </div>
         <div>
           <h1 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">
-            Ahiram AI Agent
+            Nexus Agent
           </h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="relative flex h-2.5 w-2.5">
@@ -37,7 +36,7 @@ export function AgentHeader({ config, onToggleRun, onRunNow, isRunCyclePending }
               <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isRunning ? 'bg-primary' : 'bg-muted-foreground'}`}></span>
             </span>
             <span className="text-sm font-mono text-muted-foreground uppercase tracking-widest">
-              {isRunning ? 'System Active' : 'System Standby'}
+              {isRunning ? 'System Active · Powered by Puter' : 'System Standby · Powered by Puter'}
             </span>
           </div>
         </div>
@@ -56,21 +55,15 @@ export function AgentHeader({ config, onToggleRun, onRunNow, isRunCyclePending }
         <button
           onClick={onToggleRun}
           className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:scale-[1.02] active:scale-95 ${
-            isRunning 
+            isRunning
               ? 'bg-gradient-to-r from-destructive/20 to-destructive/10 text-destructive border border-destructive/50 hover:bg-destructive/30 hover:shadow-destructive/20'
               : 'bg-gradient-to-r from-primary to-primary/80 text-black border border-primary hover:shadow-primary/30'
           }`}
         >
           {isRunning ? (
-            <>
-              <Square className="w-4 h-4 fill-current" />
-              Stop Auto-Run
-            </>
+            <><Square className="w-4 h-4 fill-current" />Stop Auto-Run</>
           ) : (
-            <>
-              <Play className="w-4 h-4 fill-current" />
-              Start Auto-Run
-            </>
+            <><Play className="w-4 h-4 fill-current" />Start Auto-Run</>
           )}
         </button>
       </div>
