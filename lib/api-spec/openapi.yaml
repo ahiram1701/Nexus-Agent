@@ -88,6 +88,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/AgentLogsResponse"
 
+  /agent/chat:
+    get:
+      operationId: getChatHistory
+      tags: [agent]
+      summary: Get chat history
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        "200":
+          description: Chat messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatHistoryResponse"
+    post:
+      operationId: sendChatMessage
+      tags: [agent]
+      summary: Send a message to the agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendChatMessageRequest"
+      responses:
+        "200":
+          description: Agent response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessage"
+
   /agent/config:
     get:
       operationId: getAgentConfig
@@ -196,6 +232,42 @@ components:
             $ref: "#/components/schemas/AgentLogEntry"
       required:
         - logs
+
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        role:
+          type: string
+          enum: [user, agent]
+        content:
+          type: string
+        timestamp:
+          type: string
+      required:
+        - id
+        - role
+        - content
+        - timestamp
+
+    SendChatMessageRequest:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+
+    ChatHistoryResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+      required:
+        - messages
 
     AgentConfig:
       type: object
