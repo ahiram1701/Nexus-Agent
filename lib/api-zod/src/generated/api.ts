@@ -68,6 +68,40 @@ export const GetAgentLogsResponse = zod.object({
 });
 
 /**
+ * @summary Get chat history
+ */
+export const getChatHistoryQueryLimitDefault = 100;
+
+export const GetChatHistoryQueryParams = zod.object({
+  limit: zod.coerce.number().default(getChatHistoryQueryLimitDefault),
+});
+
+export const GetChatHistoryResponse = zod.object({
+  messages: zod.array(
+    zod.object({
+      id: zod.number(),
+      role: zod.enum(["user", "agent"]),
+      content: zod.string(),
+      timestamp: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary Send a message to the agent
+ */
+export const SendChatMessageBody = zod.object({
+  content: zod.string(),
+});
+
+export const SendChatMessageResponse = zod.object({
+  id: zod.number(),
+  role: zod.enum(["user", "agent"]),
+  content: zod.string(),
+  timestamp: zod.string(),
+});
+
+/**
  * @summary Get agent configuration
  */
 export const GetAgentConfigResponse = zod.object({

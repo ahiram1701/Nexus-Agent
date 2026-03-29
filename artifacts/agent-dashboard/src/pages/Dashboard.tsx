@@ -4,6 +4,7 @@ import { LiveThoughtStream } from "@/components/LiveThoughtStream";
 import { ConfigPanel } from "@/components/ConfigPanel";
 import { MemoryEditor } from "@/components/MemoryEditor";
 import { LogViewer } from "@/components/LogViewer";
+import { ChatPanel } from "@/components/ChatPanel";
 import { Loader2 } from "lucide-react";
 
 export function Dashboard() {
@@ -19,6 +20,9 @@ export function Dashboard() {
     logs,
     runCycle,
     isRunningCycle,
+    chatMessages,
+    sendChatMessage,
+    isSendingChat,
   } = useAgentDashboard();
 
   if (isLoadingConfig) {
@@ -35,7 +39,7 @@ export function Dashboard() {
   const latestLog = logs?.[0];
 
   return (
-    <div className="max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8 space-y-6">
+    <div className="max-w-[1800px] mx-auto p-4 md:p-6 lg:p-8 space-y-6">
       <AgentHeader 
         config={config} 
         onToggleRun={toggleIsRunning}
@@ -44,8 +48,8 @@ export function Dashboard() {
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-        {/* Main Neural View - Left Column */}
-        <div className="xl:col-span-8 space-y-6 flex flex-col">
+        {/* Left: Neural stream + logs */}
+        <div className="xl:col-span-5 space-y-6 flex flex-col">
           <LiveThoughtStream 
             latestLog={latestLog} 
             isThinking={isRunningCycle} 
@@ -53,14 +57,25 @@ export function Dashboard() {
           <LogViewer logs={logs} />
         </div>
 
-        {/* State & Config View - Right Column */}
-        <div className="xl:col-span-4 flex flex-col gap-6">
+        {/* Center: Chat */}
+        <div className="xl:col-span-4" style={{ minHeight: "600px" }}>
+          <div className="h-full" style={{ minHeight: "600px" }}>
+            <ChatPanel
+              messages={chatMessages as Array<{ id: number; role: "user" | "agent"; content: string; timestamp: string }>}
+              onSend={sendChatMessage}
+              isSending={isSendingChat}
+            />
+          </div>
+        </div>
+
+        {/* Right: Config + Memory */}
+        <div className="xl:col-span-3 flex flex-col gap-6">
           <ConfigPanel 
             config={config} 
             onUpdate={(newConfig) => updateConfig({ data: newConfig })}
             isUpdating={isUpdatingConfig}
           />
-          <div className="flex-1 min-h-[400px]">
+          <div className="flex-1 min-h-[300px]">
             <MemoryEditor 
               memoryContent={memory?.content}
               updatedAt={memory?.updatedAt}

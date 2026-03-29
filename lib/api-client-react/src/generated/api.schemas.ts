@@ -38,6 +38,29 @@ export interface AgentLogsResponse {
   logs: AgentLogEntry[];
 }
 
+export type ChatMessageRole =
+  (typeof ChatMessageRole)[keyof typeof ChatMessageRole];
+
+export const ChatMessageRole = {
+  user: "user",
+  agent: "agent",
+} as const;
+
+export interface ChatMessage {
+  id: number;
+  role: ChatMessageRole;
+  content: string;
+  timestamp: string;
+}
+
+export interface SendChatMessageRequest {
+  content: string;
+}
+
+export interface ChatHistoryResponse {
+  messages: ChatMessage[];
+}
+
 export interface AgentConfig {
   intervalSeconds: number;
   goal: string;
@@ -45,5 +68,9 @@ export interface AgentConfig {
 }
 
 export type GetAgentLogsParams = {
+  limit?: number;
+};
+
+export type GetChatHistoryParams = {
   limit?: number;
 };

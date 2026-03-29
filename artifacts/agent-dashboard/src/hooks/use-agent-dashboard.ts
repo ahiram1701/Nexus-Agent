@@ -6,9 +6,12 @@ import {
   useUpdateMemory,
   useRunAgentCycle,
   useGetAgentLogs,
+  useGetChatHistory,
+  useSendChatMessage,
   getGetAgentLogsQueryKey,
   getGetMemoryQueryKey,
   getGetAgentConfigQueryKey,
+  getGetChatHistoryQueryKey,
 } from "@workspace/api-client-react";
 
 export function useAgentDashboard() {
@@ -48,7 +51,18 @@ export function useAgentDashboard() {
     }
   );
 
-  // 4. Run Cycle Manually
+  // 4. Chat
+  const chatQuery = useGetChatHistory({ limit: 100 });
+
+  const sendChatMutation = useSendChatMessage({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetChatHistoryQueryKey() });
+      },
+    },
+  });
+
+  // 5. Run Cycle Manually
   const runCycleMutation = useRunAgentCycle({
     mutation: {
       onSuccess: () => {
@@ -88,5 +102,9 @@ export function useAgentDashboard() {
 
     runCycle: runCycleMutation.mutate,
     isRunningCycle: runCycleMutation.isPending,
+
+    chatMessages: chatQuery.data?.messages ?? [],
+    sendChatMessage: (content: string) => sendChatMutation.mutate({ data: { content } }),
+    isSendingChat: sendChatMutation.isPending,
   };
 }
