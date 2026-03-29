@@ -1,96 +1,108 @@
-# Workspace
+# Nexus Agent
 
-## Overview
+## Descripción
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+Dashboard web para un agente de inteligencia artificial autónomo. Toda la IA, memoria, almacenamiento y autenticación corren a través de **Puter** — no hay backend propio ni base de datos externa. El frontend es una app React + Vite que se comunica directamente con la API de Puter desde el navegador.
 
 ## Stack
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
+- **Monorepo**: pnpm workspaces
+- **Node.js**: 24
 - **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **TypeScript**: 5.9
+- **Frontend**: React 19 + Vite 7
+- **Estilos**: Tailwind CSS 4 + shadcn/ui
+- **Animaciones**: Framer Motion
+- **Enrutamiento**: Wouter
+- **IA / Storage**: Puter SDK (`puter.ai.chat`, `puter.kv`, `puter.fs`, `puter.auth`)
 
-## Structure
+## Estructura
 
 ```text
-artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+workspace/
+├── artifacts/
+│   ├── agent-dashboard/        # App principal (React + Vite)
+│   │   ├── src/
+│   │   │   ├── components/     # UI: AgentHeader, ChatPanel, LiveThoughtStream, LogViewer, MemoryEditor, ConfigPanel
+│   │   │   ├── hooks/
+│   │   │   │   └── use-puter-agent.ts   # Hook central — toda la lógica del agente con Puter
+│   │   │   ├── lib/
+│   │   │   │   └── puter.ts    # Wrappers para puter.kv, puter.ai.chat, puter.fs
+│   │   │   ├── pages/
+│   │   │   │   └── Dashboard.tsx
+│   │   │   └── types/
+│   │   │       ├── agent.ts    # Tipos: AgentLog, ChatMessage, AgentConfig, AgentMemory
+│   │   │       └── puter.d.ts  # Declaraciones TypeScript del SDK de Puter
+│   │   └── index.html          # Incluye <script src="https://js.puter.com/v2/">
+│   └── mockup-sandbox/         # Servidor de preview para canvas (herramienta Replit)
+├── scripts/                    # Scripts de utilidad del workspace
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+├── tsconfig.json
+└── replit.md
 ```
 
-## TypeScript & Composite Projects
+## Cómo funciona Puter en la app
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+### Autenticación
+`puter.auth.isLoggedIn()` detecta si el usuario ya tiene sesión. Si no, se muestra la pantalla de login con un botón que llama a `puter.auth.signIn()`.
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+### Almacenamiento en `puter.kv`
+| Clave | Contenido |
+|---|---|
+| `nexus:memory` | Memoria acumulada del agente (JSON `AgentMemory`) |
+| `nexus:config` | Configuración: objetivo, intervalo, isRunning (JSON `AgentConfig`) |
+| `nexus:logs` | Array de los últimos 100 ciclos (JSON `AgentLog[]`) |
+| `nexus:chat` | Historial de chat (JSON `ChatMessage[]`) |
+| `nexus:log_counter` | Contador de IDs de logs |
+| `nexus:chat_counter` | Contador de IDs de mensajes |
 
-## Root Scripts
+### IA con `puter.ai.chat`
+- **Ciclos autónomos**: el agente recibe su objetivo + memoria, razona, decide una acción, actualiza su memoria y registra el ciclo.
+- **Chat directo**: el agente responde en contexto con su objetivo y memoria actuales.
+- Los ciclos pueden ejecutarse manualmente o en bucle automático cada N segundos.
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+### Archivo de log en `puter.fs`
+Cada ciclo se escribe en `nexus-agent-log.txt` en la cuenta Puter del usuario.
 
-## Packages
+## Componentes principales
 
-### `artifacts/api-server` (`@workspace/api-server`)
+| Componente | Función |
+|---|---|
+| `AgentHeader` | Nombre, estado (activo/standby), botones Run Cycle / Start-Stop Auto-Run |
+| `ChatPanel` | Canal directo de chat con el agente |
+| `LiveThoughtStream` | Último pensamiento, acción y resultado del agente |
+| `LogViewer` | Historial cronológico de todos los ciclos |
+| `ConfigPanel` | Editar objetivo e intervalo del agente |
+| `MemoryEditor` | Ver y editar manualmente la memoria del agente |
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+## Hook central: `use-puter-agent.ts`
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+Exporta todo el estado y acciones que necesita el Dashboard:
 
-### `lib/db` (`@workspace/db`)
+```ts
+const {
+  config, memory, logs, chatMessages,
+  isLoading, needsLogin,
+  isRunningCycle, isSendingChat,
+  login, runCycle, toggleIsRunning,
+  updateConfig, updateMemory, sendChatMessage,
+} = usePuterAgent();
+```
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
+## Comandos útiles
 
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
+```bash
+# Iniciar el servidor de desarrollo
+pnpm --filter @workspace/agent-dashboard run dev
 
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
+# Build de producción
+pnpm --filter @workspace/agent-dashboard run build
 
-### `lib/api-spec` (`@workspace/api-spec`)
+# Typecheck
+pnpm --filter @workspace/agent-dashboard run typecheck
+```
 
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
+## Despliegue
 
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+La app se despliega como sitio estático (solo frontend). No requiere servidor ni base de datos propia. Todo el estado del agente vive en la cuenta Puter del usuario.
