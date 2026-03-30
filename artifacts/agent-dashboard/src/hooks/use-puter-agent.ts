@@ -6,6 +6,7 @@ import {
   loadLogs, appendLog,
   loadChat, appendChatMessage,
   runAgentCycle, sendUserMessage,
+  resetAgent,
 } from "@/lib/puter";
 
 export function usePuterAgent() {
@@ -174,6 +175,18 @@ export function usePuterAgent() {
     }
   }, [isSendingChat, chatMessages]);
 
+  const reset = useCallback(async () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    await resetAgent();
+    setMemory({ content: "", updatedAt: new Date().toISOString() });
+    setConfig({ goal: "Continuously observe, analyze, and optimize the user's workflow by identifying inefficiencies, suggesting improvements, and taking actions when possible.", intervalSeconds: 30, isRunning: false });
+    setLogs([]);
+    setChatMessages([]);
+  }, []);
+
   return {
     memory,
     config,
@@ -189,5 +202,6 @@ export function usePuterAgent() {
     updateConfig,
     toggleIsRunning,
     sendChatMessage,
+    reset,
   };
 }

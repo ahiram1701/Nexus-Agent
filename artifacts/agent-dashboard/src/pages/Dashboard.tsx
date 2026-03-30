@@ -23,6 +23,7 @@ export function Dashboard() {
     updateConfig,
     toggleIsRunning,
     sendChatMessage,
+    reset,
   } = usePuterAgent();
 
   // Loading state
@@ -100,6 +101,7 @@ export function Dashboard() {
           <ConfigPanel
             config={config}
             onUpdate={updateConfig}
+            onReset={reset}
             isUpdating={false}
           />
           <div className="flex-1 min-h-[300px]">

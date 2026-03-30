@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Settings, Target, Clock } from "lucide-react";
+import { Settings, Target, Clock, RotateCcw, AlertTriangle } from "lucide-react";
 import type { AgentConfig } from "@/types/agent";
 
 interface ConfigPanelProps {
   config?: AgentConfig | null;
   onUpdate: (config: AgentConfig) => void;
+  onReset: () => Promise<void>;
   isUpdating: boolean;
 }
 
-export function ConfigPanel({ config, onUpdate, isUpdating }: ConfigPanelProps) {
+export function ConfigPanel({ config, onUpdate, onReset, isUpdating }: ConfigPanelProps) {
   const [open, setOpen] = useState(false);
   const [goal, setGoal] = useState(config?.goal || "");
   const [interval, setIntervalVal] = useState(config?.intervalSeconds?.toString() || "30");
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +26,17 @@ export function ConfigPanel({ config, onUpdate, isUpdating }: ConfigPanelProps) 
       intervalSeconds: parseInt(interval, 10) || 30,
     });
     setOpen(false);
+  };
+
+  const handleReset = async () => {
+    setIsResetting(true);
+    try {
+      await onReset();
+    } finally {
+      setIsResetting(false);
+      setConfirmReset(false);
+      setOpen(false);
+    }
   };
 
   return (
@@ -39,6 +53,7 @@ export function ConfigPanel({ config, onUpdate, isUpdating }: ConfigPanelProps) 
             setGoal(config.goal);
             setIntervalVal(config.intervalSeconds.toString());
           }
+          if (!val) setConfirmReset(false);
           setOpen(val);
         }}>
           <DialogTrigger asChild>
@@ -50,6 +65,7 @@ export function ConfigPanel({ config, onUpdate, isUpdating }: ConfigPanelProps) 
             <DialogHeader>
               <DialogTitle className="font-display text-xl text-white">Configure Directive</DialogTitle>
             </DialogHeader>
+
             <form onSubmit={handleSave} className="space-y-6 mt-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-300">Primary Goal</label>
@@ -84,6 +100,46 @@ export function ConfigPanel({ config, onUpdate, isUpdating }: ConfigPanelProps) 
                 </button>
               </div>
             </form>
+
+            {/* Divider */}
+            <div className="border-t border-white/10 mt-2 pt-4">
+              {!confirmReset ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmReset(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-destructive/80 hover:text-destructive bg-destructive/5 hover:bg-destructive/10 border border-destructive/20 hover:border-destructive/40 transition-all"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Resetear agente
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/30">
+                    <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                    <p className="text-xs text-destructive/90 leading-relaxed">
+                      Esto borrará toda la memoria, logs, historial del chat y configuración del agente. Esta acción no se puede deshacer.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmReset(false)}
+                      className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white border border-white/10 transition-all"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleReset}
+                      disabled={isResetting}
+                      className="flex-1 px-4 py-2 rounded-xl text-sm font-bold bg-destructive/20 hover:bg-destructive/30 text-destructive border border-destructive/40 transition-all disabled:opacity-50"
+                    >
+                      {isResetting ? "Reseteando..." : "Sí, resetear"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </div>
