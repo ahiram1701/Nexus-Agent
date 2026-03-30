@@ -110,14 +110,14 @@ export function ConfigPanel({ config, onUpdate, onReset, isUpdating }: ConfigPan
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-destructive/80 hover:text-destructive bg-destructive/5 hover:bg-destructive/10 border border-destructive/20 hover:border-destructive/40 transition-all"
                 >
                   <RotateCcw className="w-4 h-4" />
-                  Resetear agente
+                  Reset agent
                 </button>
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/30">
                     <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                     <p className="text-xs text-destructive/90 leading-relaxed">
-                      Esto borrará toda la memoria, logs, historial del chat y configuración del agente. Esta acción no se puede deshacer.
+                      This will erase all memory, logs, chat history, and agent configuration. This action cannot be undone.
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -126,7 +126,7 @@ export function ConfigPanel({ config, onUpdate, onReset, isUpdating }: ConfigPan
                       onClick={() => setConfirmReset(false)}
                       className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white border border-white/10 transition-all"
                     >
-                      Cancelar
+                      Cancel
                     </button>
                     <button
                       type="button"
@@ -134,7 +134,7 @@ export function ConfigPanel({ config, onUpdate, onReset, isUpdating }: ConfigPan
                       disabled={isResetting}
                       className="flex-1 px-4 py-2 rounded-xl text-sm font-bold bg-destructive/20 hover:bg-destructive/30 text-destructive border border-destructive/40 transition-all disabled:opacity-50"
                     >
-                      {isResetting ? "Reseteando..." : "Sí, resetear"}
+                      {isResetting ? "Resetting..." : "Yes, reset"}
                     </button>
                   </div>
                 </div>

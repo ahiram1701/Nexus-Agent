@@ -49,8 +49,8 @@ export function Dashboard() {
           <div className="space-y-2">
             <h1 className="text-2xl font-display font-bold text-white">Nexus Agent</h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Este agente usa <span className="text-primary font-semibold">Puter</span> para IA, memoria y almacenamiento.
-              Inicia sesión con tu cuenta de Puter para continuar.
+              This agent uses <span className="text-primary font-semibold">Puter</span> for AI, memory, and storage.
+              Sign in with your Puter account to continue.
             </p>
           </div>
           <button
@@ -58,7 +58,7 @@ export function Dashboard() {
             className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 text-black shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all hover:-translate-y-0.5 active:scale-95"
           >
             <LogIn className="w-5 h-5" />
-            Conectar con Puter
+            Connect with Puter
           </button>
           <p className="text-xs text-muted-foreground font-mono">
             puter.ai · puter.kv · puter.fs
