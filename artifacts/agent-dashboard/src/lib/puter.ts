@@ -10,7 +10,7 @@ const KEYS = {
 } as const;
 
 const DEFAULT_CONFIG: AgentConfig = {
-  goal: "Help the user be more productive and happy.",
+  goal: "Continuously observe, analyze, and optimize the user's workflow by identifying inefficiencies, suggesting improvements, and taking actions when possible.",
   intervalSeconds: 30,
   isRunning: false,
 };
