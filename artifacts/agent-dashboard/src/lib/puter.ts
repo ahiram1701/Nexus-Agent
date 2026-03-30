@@ -127,6 +127,24 @@ export async function appendChatMessage(role: "user" | "agent", content: string)
   return msg;
 }
 
+// ── Reset ─────────────────────────────────────────────────────────────────────
+
+export async function resetAgent(): Promise<void> {
+  await Promise.all([
+    window.puter.kv.del(KEYS.memory),
+    window.puter.kv.del(KEYS.config),
+    window.puter.kv.del(KEYS.logs),
+    window.puter.kv.del(KEYS.chat),
+    window.puter.kv.del(KEYS.logCounter),
+    window.puter.kv.del(KEYS.chatCounter),
+  ]);
+  try {
+    await window.puter.fs.write("nexus-agent-log.txt", "");
+  } catch {
+    // best-effort
+  }
+}
+
 // ── Agent Cycle ───────────────────────────────────────────────────────────────
 
 interface CycleResult {
