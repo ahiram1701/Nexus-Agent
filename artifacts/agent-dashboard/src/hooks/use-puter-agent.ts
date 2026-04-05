@@ -164,10 +164,17 @@ export function usePuterAgent() {
 
       const cfg = configRef.current;
       const mem = memoryRef.current;
-      const replyText = await sendUserMessage(content, cfg?.goal ?? "", mem?.content ?? "", [...chatMessages, userMsg]);
+      const { reply, newMemory } = await sendUserMessage(content, cfg?.goal ?? "", mem?.content ?? "", [...chatMessages, userMsg]);
 
-      const agentMsg = await appendChatMessage("agent", replyText);
+      const agentMsg = await appendChatMessage("agent", reply);
       setChatMessages((prev) => [...prev, agentMsg]);
+
+      // Update memory with what was learned from the conversation
+      if (newMemory && newMemory !== mem?.content) {
+        const updatedMem = await saveMemory(newMemory);
+        setMemory(updatedMem);
+        memoryRef.current = updatedMem;
+      }
     } catch (err) {
       console.error("Chat error:", err);
     } finally {

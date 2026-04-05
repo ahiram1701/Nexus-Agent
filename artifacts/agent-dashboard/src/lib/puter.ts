@@ -195,7 +195,12 @@ Respond ONLY with a valid JSON object in this exact format:
   }
 }
 
-export async function sendUserMessage(content: string, goal: string, memory: string, history: ChatMessage[]): Promise<string> {
+interface ChatResult {
+  reply: string;
+  newMemory: string;
+}
+
+export async function sendUserMessage(content: string, goal: string, memory: string, history: ChatMessage[]): Promise<ChatResult> {
   const recentHistory = history.slice(-16).map((m) => {
     const role = m.role === "agent" ? "AGENT" : "USER";
     return `${role}: ${m.content}`;
@@ -211,7 +216,25 @@ ${recentHistory || "(none)"}
 
 USER: ${content}
 
-Respond naturally and helpfully as the agent. Be concise and in character. Reference your goal and memory when relevant. Do NOT wrap your reply in JSON.`;
+Respond with a JSON object in this exact format:
+{
+  "reply": "<your natural conversational response to the user>",
+  "newMemory": "<updated memory that incorporates anything relevant from this exchange — keep existing important context and add new learnings>"
+}`;
 
-  return await puterChat(prompt);
+  const text = await puterChat(prompt);
+
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text) as ChatResult;
+    return {
+      reply: parsed.reply ?? text,
+      newMemory: parsed.newMemory ?? memory,
+    };
+  } catch {
+    return {
+      reply: text,
+      newMemory: memory,
+    };
+  }
 }
