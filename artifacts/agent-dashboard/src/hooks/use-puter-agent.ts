@@ -189,7 +189,7 @@ export function usePuterAgent() {
     }
     await resetAgent();
     setMemory({ content: "", updatedAt: new Date().toISOString() });
-    setConfig({ goal: "Continuously observe, analyze, and optimize the user's workflow by identifying inefficiencies, suggesting improvements, and taking actions when possible.", intervalSeconds: 30, isRunning: false });
+    setConfig({ goal: "", intervalSeconds: 30, isRunning: false });
     setLogs([]);
     setChatMessages([]);
   }, []);
