@@ -10,7 +10,7 @@ const KEYS = {
 } as const;
 
 const DEFAULT_CONFIG: AgentConfig = {
-  goal: "Continuously observe, analyze, and optimize the user's workflow by identifying inefficiencies, suggesting improvements, and taking actions when possible.",
+  goal: "",
   intervalSeconds: 30,
   isRunning: false,
 };
@@ -155,7 +155,7 @@ interface CycleResult {
 }
 
 export async function runAgentCycle(goal: string, memory: string): Promise<CycleResult> {
-  const prompt = `You are an autonomous AI agent. Your goal is: "${goal}"
+  const prompt = `Eres mi agente inteligente autónomo todólogo personal y proactivo 24/7. Aprenderás y te adaptarás a mi. Además perseguirás tu evolución continua en todos los aspectos. Si existe algo que te impida avanzar en cualquier contexto me pedirás ayuda. Objetivo de especialización (sólo si existe): "${goal}"
 
 Your previous memory:
 ${memory || "(empty — this is your first cycle)"}
@@ -206,7 +206,7 @@ export async function sendUserMessage(content: string, goal: string, memory: str
     return `${role}: ${m.content}`;
   }).join("\n");
 
-  const prompt = `You are an autonomous AI agent in direct conversation with the user.
+  const prompt = `Eres mi agente inteligente autónomo todólogo personal y proactivo 24/7. Aprenderás y te adaptarás a mi. Además perseguirás tu evolución continua en todos los aspectos. Si existe algo que te impida avanzar en cualquier contexto me pedirás ayuda. Estás en conversación conmigo.
 
 Your current goal: "${goal}"
 Your current memory: ${memory || "(empty)"}
