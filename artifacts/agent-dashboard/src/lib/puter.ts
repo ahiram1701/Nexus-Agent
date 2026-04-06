@@ -163,7 +163,7 @@ ${memory || "(empty — this is your first cycle)"}
 Your task:
 1. Reflect on what you know and what your goal is.
 2. Decide what action to take right now to make progress toward that goal.
-3. Describe the result of that action (simulate it if needed).
+3. Describe the result of that action.
 4. Update your memory with important learnings, progress, and next steps.
 
 Respond ONLY with a valid JSON object in this exact format:
