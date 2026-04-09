@@ -1,8 +1,6 @@
 # Nexus Agent
 
-## Descripción
-
-Dashboard web para un agente de inteligencia artificial autónomo. Toda la IA, memoria, almacenamiento y autenticación corren a través de **Puter** — no hay backend propio ni base de datos externa. El frontend es una app React + Vite que se comunica directamente con la API de Puter desde el navegador.
+Dashboard de agente de inteligencia artificial autónomo. Funciona como **aplicación web** en el navegador y como **aplicación de escritorio nativa** en Windows (Electron). Toda la IA, memoria, almacenamiento y autenticación corren a través de **Puter** — no hay backend propio ni base de datos externa.
 
 ## Stack
 
@@ -15,39 +13,94 @@ Dashboard web para un agente de inteligencia artificial autónomo. Toda la IA, m
 - **Animaciones**: Framer Motion
 - **Enrutamiento**: Wouter
 - **IA / Storage**: Puter SDK (`puter.ai.chat`, `puter.kv`, `puter.fs`, `puter.auth`)
+- **Escritorio**: Electron 33
 
 ## Estructura
 
 ```text
 workspace/
 ├── artifacts/
-│   ├── agent-dashboard/        # App principal (React + Vite)
-│   │   ├── src/
-│   │   │   ├── components/     # UI: AgentHeader, ChatPanel, LiveThoughtStream, LogViewer, MemoryEditor, ConfigPanel
-│   │   │   ├── hooks/
-│   │   │   │   └── use-puter-agent.ts   # Hook central — toda la lógica del agente con Puter
-│   │   │   ├── lib/
-│   │   │   │   └── puter.ts    # Wrappers para puter.kv, puter.ai.chat, puter.fs
-│   │   │   ├── pages/
-│   │   │   │   └── Dashboard.tsx
-│   │   │   └── types/
-│   │   │       ├── agent.ts    # Tipos: AgentLog, ChatMessage, AgentConfig, AgentMemory
-│   │   │       └── puter.d.ts  # Declaraciones TypeScript del SDK de Puter
-│   │   └── index.html          # Incluye <script src="https://js.puter.com/v2/">
-│   └── mockup-sandbox/         # Servidor de preview para canvas (herramienta Replit)
-├── scripts/                    # Scripts de utilidad del workspace
+│   └── agent-dashboard/
+│       ├── electron/
+│       │   └── main.cjs              # Proceso principal de Electron
+│       ├── src/
+│       │   ├── components/           # AgentHeader, ChatPanel, LiveThoughtStream, LogViewer, MemoryEditor, ConfigPanel
+│       │   ├── hooks/
+│       │   │   └── use-puter-agent.ts  # Hook central — toda la lógica del agente
+│       │   ├── lib/
+│       │   │   └── puter.ts          # Wrappers para puter.kv, puter.ai.chat, puter.fs
+│       │   ├── pages/
+│       │   │   └── Dashboard.tsx
+│       │   └── types/
+│       │       ├── agent.ts          # Tipos: AgentLog, ChatMessage, AgentConfig, AgentMemory
+│       │       └── puter.d.ts        # Declaraciones TypeScript del SDK de Puter
+│       ├── index.html                # Incluye <script src="https://js.puter.com/v2/">
+│       ├── vite.config.ts            # Config Vite para web (Replit)
+│       ├── vite.electron.config.ts   # Config Vite para build de escritorio
+│       └── electron-builder.yml      # Configuración del instalador Windows
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json
-├── tsconfig.json
 └── replit.md
 ```
 
-## Cómo funciona Puter en la app
+## Comandos
+
+### Aplicación web (Replit)
+
+```bash
+# Servidor de desarrollo
+pnpm --filter @workspace/agent-dashboard run dev
+
+# Build de producción
+pnpm --filter @workspace/agent-dashboard run build
+
+# Typecheck
+pnpm --filter @workspace/agent-dashboard run typecheck
+```
+
+### Aplicación de escritorio — Windows
+
+**Requisitos:** Node.js 20+, pnpm
+
+```bash
+# Clonar e instalar dependencias
+git clone <url-del-repo>
+cd <carpeta>
+pnpm install
+```
+
+**Desarrollo** (ventana Electron con hot-reload):
+
+```bash
+pnpm --filter @workspace/agent-dashboard run electron:dev
+```
+
+**Build — instalador Windows:**
+
+```bash
+pnpm --filter @workspace/agent-dashboard run electron:build
+```
+
+Genera en `artifacts/agent-dashboard/dist/release/`:
+- `Nexus Agent Setup.exe` — instalador NSIS (elige carpeta, crea accesos directos)
+- `NexusAgent-portable.exe` — ejecutable portable sin instalación
+
+**Build — carpeta sin empaquetar** (para pruebas rápidas):
+
+```bash
+pnpm --filter @workspace/agent-dashboard run electron:build:dir
+```
+
+Genera `dist/release/win-unpacked/Nexus Agent.exe`, ejecutable directamente.
+
+## Cómo funciona Puter
 
 ### Autenticación
-`puter.auth.isLoggedIn()` detecta si el usuario ya tiene sesión. Si no, se muestra la pantalla de login con un botón que llama a `puter.auth.signIn()`.
+
+`puter.auth.isLoggedIn()` detecta si el usuario ya tiene sesión. Si no, se muestra una pantalla de login con un botón que llama a `puter.auth.signIn()`. En Electron, la ventana OAuth de Puter se abre como ventana hija nativa.
 
 ### Almacenamiento en `puter.kv`
+
 | Clave | Contenido |
 |---|---|
 | `nexus:memory` | Memoria acumulada del agente (JSON `AgentMemory`) |
@@ -58,11 +111,13 @@ workspace/
 | `nexus:chat_counter` | Contador de IDs de mensajes |
 
 ### IA con `puter.ai.chat`
+
 - **Ciclos autónomos**: el agente recibe su objetivo + memoria, razona, decide una acción, actualiza su memoria y registra el ciclo.
-- **Chat directo**: el agente responde en contexto con su objetivo y memoria actuales.
+- **Chat directo**: el agente responde en contexto y actualiza su memoria tras cada intercambio.
 - Los ciclos pueden ejecutarse manualmente o en bucle automático cada N segundos.
 
 ### Archivo de log en `puter.fs`
+
 Cada ciclo se escribe en `nexus-agent-log.txt` en la cuenta Puter del usuario.
 
 ## Componentes principales
@@ -73,12 +128,10 @@ Cada ciclo se escribe en `nexus-agent-log.txt` en la cuenta Puter del usuario.
 | `ChatPanel` | Canal directo de chat con el agente |
 | `LiveThoughtStream` | Último pensamiento, acción y resultado del agente |
 | `LogViewer` | Historial cronológico de todos los ciclos |
-| `ConfigPanel` | Editar objetivo e intervalo del agente |
+| `ConfigPanel` | Editar objetivo e intervalo, y resetear el agente |
 | `MemoryEditor` | Ver y editar manualmente la memoria del agente |
 
 ## Hook central: `use-puter-agent.ts`
-
-Exporta todo el estado y acciones que necesita el Dashboard:
 
 ```ts
 const {
@@ -87,22 +140,10 @@ const {
   isRunningCycle, isSendingChat,
   login, runCycle, toggleIsRunning,
   updateConfig, updateMemory, sendChatMessage,
+  resetAgent,
 } = usePuterAgent();
 ```
 
-## Comandos útiles
+## Despliegue web
 
-```bash
-# Iniciar el servidor de desarrollo
-pnpm --filter @workspace/agent-dashboard run dev
-
-# Build de producción
-pnpm --filter @workspace/agent-dashboard run build
-
-# Typecheck
-pnpm --filter @workspace/agent-dashboard run typecheck
-```
-
-## Despliegue
-
-La app se despliega como sitio estático (solo frontend). No requiere servidor ni base de datos propia. Todo el estado del agente vive en la cuenta Puter del usuario.
+La app web se despliega como sitio estático — solo frontend, sin servidor ni base de datos. Todo el estado del agente vive en la cuenta Puter del usuario.
