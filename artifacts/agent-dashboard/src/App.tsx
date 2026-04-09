@@ -1,13 +1,13 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Dashboard } from "@/pages/Dashboard";
+import { DashboardV2 } from "@/pages/DashboardV2";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/" component={DashboardV2} />
       <Route component={NotFound} />
     </Switch>
   );

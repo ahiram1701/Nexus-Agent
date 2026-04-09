@@ -1,5 +1,6 @@
 appId: com.nexusagent.desktop
 productName: Nexus Agent
+artifactName: ${productName}-${version}-${arch}.${ext}
 copyright: Copyright © 2025 Nexus Agent
 
 directories:
@@ -11,7 +12,13 @@ files:
   - dist/electron-app/**/*
   - package.json
 
+extraMetadata:
+  description: Windows desktop dashboard for Nexus Agent powered by Puter.
+  author:
+    name: Nexus Agent contributors
+
 win:
+  icon: build-resources/icon.ico
   target:
     - target: nsis
       arch:

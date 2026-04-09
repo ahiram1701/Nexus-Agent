@@ -1,4 +1,12 @@
-import type { AgentLog, ChatMessage, AgentConfig, AgentMemory } from "@/types/agent";
+import type {
+  AgentConfig,
+  AgentIssue,
+  AgentIssueKind,
+  AgentIssueSource,
+  AgentLog,
+  AgentMemory,
+  ChatMessage,
+} from "@/types/agent";
 
 const KEYS = {
   memory: "nexus:memory",
@@ -15,6 +23,174 @@ const DEFAULT_CONFIG: AgentConfig = {
   isRunning: false,
 };
 
+export const MAX_LOG_ENTRIES = 500;
+export const MAX_CHAT_MESSAGES = 1000;
+export const PUTER_SDK_WAIT_TIMEOUT_MS = 6000;
+
+interface PuterErrorOptions {
+  cause?: unknown;
+  details?: string;
+  retryable?: boolean;
+}
+
+export class PuterClientError extends Error {
+  kind: AgentIssueKind;
+  source: AgentIssueSource;
+  details?: string;
+  retryable: boolean;
+
+  constructor(
+    kind: AgentIssueKind,
+    source: AgentIssueSource,
+    message: string,
+    options: PuterErrorOptions = {},
+  ) {
+    super(message);
+    this.name = "PuterClientError";
+    this.kind = kind;
+    this.source = source;
+    this.details = options.details;
+    this.retryable = options.retryable ?? true;
+
+    if (options.cause !== undefined) {
+      this.cause = options.cause;
+    }
+  }
+}
+
+function getPuter() {
+  const puter = window.puter;
+
+  if (!puter) {
+    throw new PuterClientError(
+      "sdk_unavailable",
+      "bootstrap",
+      "No pudimos cargar el SDK de Puter. Revisa tu conexión, bloqueadores de contenido o firewall y vuelve a intentarlo.",
+      { retryable: true },
+    );
+  }
+
+  return puter;
+}
+
+function serializeError(error: unknown): string {
+  if (error instanceof PuterClientError) {
+    return error.details ?? error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.stack ?? error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
+function issueTitleForKind(kind: AgentIssueKind): string {
+  switch (kind) {
+    case "sdk_unavailable":
+      return "Puter no cargó";
+    case "auth_required":
+      return "Hace falta iniciar sesión";
+    case "authentication":
+      return "Falló la autenticación con Puter";
+    case "network":
+      return "No hubo conexión con Puter";
+    case "storage":
+      return "Falló la persistencia del agente";
+    case "ai":
+      return "Falló la respuesta de Puter AI";
+    case "parse":
+      return "La respuesta del agente no se pudo interpretar";
+    default:
+      return "Error inesperado de Puter";
+  }
+}
+
+export function createAgentIssue(error: unknown, source: AgentIssueSource): AgentIssue {
+  const classified = classifyPuterError(error, source);
+
+  return {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    kind: classified.kind,
+    source: classified.source,
+    title: issueTitleForKind(classified.kind),
+    message: classified.message,
+    details: classified.details,
+    timestamp: new Date().toISOString(),
+    retryable: classified.retryable,
+  };
+}
+
+export function classifyPuterError(error: unknown, source: AgentIssueSource): PuterClientError {
+  if (error instanceof PuterClientError) {
+    return error;
+  }
+
+  const details = serializeError(error);
+  const normalized = details.toLowerCase();
+
+  if (
+    normalized.includes("failed to fetch") ||
+    normalized.includes("network") ||
+    normalized.includes("offline") ||
+    normalized.includes("timed out") ||
+    normalized.includes("err_internet") ||
+    normalized.includes("err_network") ||
+    normalized.includes("load failed")
+  ) {
+    return new PuterClientError(
+      "network",
+      source,
+      "No se pudo conectar con Puter. Verifica tu conexión y vuelve a intentar.",
+      { cause: error, details, retryable: true },
+    );
+  }
+
+  if (source === "bootstrap" || source === "login") {
+    return new PuterClientError(
+      "authentication",
+      source,
+      source === "login"
+        ? "No pudimos completar el inicio de sesión con Puter."
+        : "No pudimos validar la sesión de Puter durante el arranque.",
+      { cause: error, details, retryable: true },
+    );
+  }
+
+  if (source === "storage" || source === "config") {
+    return new PuterClientError(
+      "storage",
+      source,
+      "No se pudieron leer o guardar los datos del agente en Puter.",
+      { cause: error, details, retryable: true },
+    );
+  }
+
+  if (source === "cycle" || source === "chat") {
+    return new PuterClientError(
+      "ai",
+      source,
+      "Puter devolvió un error mientras el agente generaba una respuesta.",
+      { cause: error, details, retryable: true },
+    );
+  }
+
+  return new PuterClientError(
+    "unknown",
+    source,
+    "Ocurrió un error inesperado al comunicarse con Puter.",
+    { cause: error, details, retryable: true },
+  );
+}
+
 // Extract text from puter.ai.chat response (handles v1 string and v2 object)
 function extractText(response: string | { message?: { content: string }; content?: string }): string {
   if (typeof response === "string") return response;
@@ -22,14 +198,35 @@ function extractText(response: string | { message?: { content: string }; content
 }
 
 export async function puterChat(prompt: string): Promise<string> {
-  const response = await window.puter.ai.chat(prompt);
+  const response = await getPuter().ai.chat(prompt);
   return extractText(response as string | { message?: { content: string }; content?: string });
+}
+
+function parseJsonPayload<T>(
+  text: string,
+  source: "cycle" | "chat",
+  fallbackMessage: string,
+): T {
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    return JSON.parse(jsonMatch ? jsonMatch[0] : text) as T;
+  } catch (error) {
+    const preview = text.slice(0, 400).trim();
+
+    throw new PuterClientError("parse", source, fallbackMessage, {
+      cause: error,
+      details: preview
+        ? `Respuesta recibida: ${preview}`
+        : "Puter no devolvió un bloque JSON utilizable.",
+      retryable: true,
+    });
+  }
 }
 
 // ── Memory ──────────────────────────────────────────────────────────────────
 
 export async function loadMemory(): Promise<AgentMemory> {
-  const raw = await window.puter.kv.get(KEYS.memory);
+  const raw = await getPuter().kv.get(KEYS.memory);
   if (!raw) return { content: "", updatedAt: new Date().toISOString() };
   try {
     return JSON.parse(raw) as AgentMemory;
@@ -40,14 +237,14 @@ export async function loadMemory(): Promise<AgentMemory> {
 
 export async function saveMemory(content: string): Promise<AgentMemory> {
   const mem: AgentMemory = { content, updatedAt: new Date().toISOString() };
-  await window.puter.kv.set(KEYS.memory, JSON.stringify(mem));
+  await getPuter().kv.set(KEYS.memory, JSON.stringify(mem));
   return mem;
 }
 
 // ── Config ───────────────────────────────────────────────────────────────────
 
 export async function loadConfig(): Promise<AgentConfig> {
-  const raw = await window.puter.kv.get(KEYS.config);
+  const raw = await getPuter().kv.get(KEYS.config);
   if (!raw) return { ...DEFAULT_CONFIG };
   try {
     return { ...DEFAULT_CONFIG, ...(JSON.parse(raw) as Partial<AgentConfig>) };
@@ -57,13 +254,13 @@ export async function loadConfig(): Promise<AgentConfig> {
 }
 
 export async function saveConfig(config: AgentConfig): Promise<void> {
-  await window.puter.kv.set(KEYS.config, JSON.stringify(config));
+  await getPuter().kv.set(KEYS.config, JSON.stringify(config));
 }
 
 // ── Logs ─────────────────────────────────────────────────────────────────────
 
 export async function loadLogs(): Promise<AgentLog[]> {
-  const raw = await window.puter.kv.get(KEYS.logs);
+  const raw = await getPuter().kv.get(KEYS.logs);
   if (!raw) return [];
   try {
     return JSON.parse(raw) as AgentLog[];
@@ -73,9 +270,9 @@ export async function loadLogs(): Promise<AgentLog[]> {
 }
 
 async function nextLogId(): Promise<number> {
-  const raw = await window.puter.kv.get(KEYS.logCounter);
+  const raw = await getPuter().kv.get(KEYS.logCounter);
   const next = (raw ? parseInt(raw, 10) : 0) + 1;
-  await window.puter.kv.set(KEYS.logCounter, String(next));
+  await getPuter().kv.set(KEYS.logCounter, String(next));
   return next;
 }
 
@@ -83,15 +280,15 @@ export async function appendLog(entry: Omit<AgentLog, "id" | "timestamp">): Prom
   const logs = await loadLogs();
   const id = await nextLogId();
   const log: AgentLog = { id, ...entry, timestamp: new Date().toISOString() };
-  const updated = [log, ...logs].slice(0, 100); // keep last 100
-  await window.puter.kv.set(KEYS.logs, JSON.stringify(updated));
+  const updated = [log, ...logs].slice(0, MAX_LOG_ENTRIES);
+  await getPuter().kv.set(KEYS.logs, JSON.stringify(updated));
 
   // Also write to puter.fs as a human-readable file
   try {
     const lines = updated
       .map((l) => `[${l.timestamp}] THOUGHT: ${l.thought}\nACTION: ${l.action}\nRESULT: ${l.result}\n`)
       .join("\n---\n");
-    await window.puter.fs.write("nexus-agent-log.txt", lines);
+    await getPuter().fs.write("nexus-agent-log.txt", lines);
   } catch {
     // fs write is best-effort
   }
@@ -102,7 +299,7 @@ export async function appendLog(entry: Omit<AgentLog, "id" | "timestamp">): Prom
 // ── Chat ──────────────────────────────────────────────────────────────────────
 
 export async function loadChat(): Promise<ChatMessage[]> {
-  const raw = await window.puter.kv.get(KEYS.chat);
+  const raw = await getPuter().kv.get(KEYS.chat);
   if (!raw) return [];
   try {
     return JSON.parse(raw) as ChatMessage[];
@@ -112,9 +309,9 @@ export async function loadChat(): Promise<ChatMessage[]> {
 }
 
 async function nextChatId(): Promise<number> {
-  const raw = await window.puter.kv.get(KEYS.chatCounter);
+  const raw = await getPuter().kv.get(KEYS.chatCounter);
   const next = (raw ? parseInt(raw, 10) : 0) + 1;
-  await window.puter.kv.set(KEYS.chatCounter, String(next));
+  await getPuter().kv.set(KEYS.chatCounter, String(next));
   return next;
 }
 
@@ -122,24 +319,26 @@ export async function appendChatMessage(role: "user" | "agent", content: string)
   const messages = await loadChat();
   const id = await nextChatId();
   const msg: ChatMessage = { id, role, content, timestamp: new Date().toISOString() };
-  const updated = [...messages, msg].slice(-200); // keep last 200
-  await window.puter.kv.set(KEYS.chat, JSON.stringify(updated));
+  const updated = [...messages, msg].slice(-MAX_CHAT_MESSAGES);
+  await getPuter().kv.set(KEYS.chat, JSON.stringify(updated));
   return msg;
 }
 
 // ── Reset ─────────────────────────────────────────────────────────────────────
 
 export async function resetAgent(): Promise<void> {
+  const puter = getPuter();
+
   await Promise.all([
-    window.puter.kv.del(KEYS.memory),
-    window.puter.kv.del(KEYS.config),
-    window.puter.kv.del(KEYS.logs),
-    window.puter.kv.del(KEYS.chat),
-    window.puter.kv.del(KEYS.logCounter),
-    window.puter.kv.del(KEYS.chatCounter),
+    puter.kv.del(KEYS.memory),
+    puter.kv.del(KEYS.config),
+    puter.kv.del(KEYS.logs),
+    puter.kv.del(KEYS.chat),
+    puter.kv.del(KEYS.logCounter),
+    puter.kv.del(KEYS.chatCounter),
   ]);
   try {
-    await window.puter.fs.write("nexus-agent-log.txt", "");
+    await puter.fs.write("nexus-agent-log.txt", "");
   } catch {
     // best-effort
   }
@@ -175,24 +374,18 @@ Respond ONLY with a valid JSON object in this exact format:
 }`;
 
   const text = await puterChat(prompt);
+  const parsed = parseJsonPayload<CycleResult>(
+    text,
+    "cycle",
+    "La respuesta del ciclo no se pudo interpretar. Intenta ejecutar el ciclo otra vez.",
+  );
 
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text) as CycleResult;
-    return {
-      thought: parsed.thought ?? "",
-      action: parsed.action ?? "",
-      result: parsed.result ?? "",
-      newMemory: parsed.newMemory ?? memory,
-    };
-  } catch {
-    return {
-      thought: "Processed this cycle.",
-      action: "Reflected on current goal.",
-      result: "Cycle completed.",
-      newMemory: memory,
-    };
-  }
+  return {
+    thought: parsed.thought ?? "",
+    action: parsed.action ?? "",
+    result: parsed.result ?? "",
+    newMemory: parsed.newMemory ?? memory,
+  };
 }
 
 interface ChatResult {
@@ -223,18 +416,14 @@ Respond with a JSON object in this exact format:
 }`;
 
   const text = await puterChat(prompt);
+  const parsed = parseJsonPayload<ChatResult>(
+    text,
+    "chat",
+    "La respuesta del chat no se pudo interpretar. Intenta enviar el mensaje de nuevo.",
+  );
 
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text) as ChatResult;
-    return {
-      reply: parsed.reply ?? text,
-      newMemory: parsed.newMemory ?? memory,
-    };
-  } catch {
-    return {
-      reply: text,
-      newMemory: memory,
-    };
-  }
+  return {
+    reply: parsed.reply ?? text,
+    newMemory: parsed.newMemory ?? memory,
+  };
 }

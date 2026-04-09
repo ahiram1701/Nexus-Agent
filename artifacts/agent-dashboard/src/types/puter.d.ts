@@ -44,7 +44,7 @@ interface Puter {
 
 declare global {
   interface Window {
-    puter: Puter;
+    puter?: Puter;
   }
 }
 

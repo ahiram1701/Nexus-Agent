@@ -45,8 +45,8 @@ workspace/
 
 ## Requisitos
 
-- Node.js 20 o superior
-- pnpm (`npm install -g pnpm`)
+- Node.js 24.x
+- pnpm 10.x (`npm install -g pnpm`)
 
 ## Instalación
 
@@ -66,6 +66,8 @@ pnpm --filter @workspace/agent-dashboard run electron:dev
 
 **Build — instalador Windows:**
 
+Antes de correr el empaquetado de Electron en Windows, asegÃºrate de tener `Developer Mode` activo o usa una PowerShell elevada. El proyecto incluye un preflight (`electron:build:doctor`) que falla rÃ¡pido si `electron-builder` no puede crear symlinks para `winCodeSign`.
+
 ```bash
 pnpm --filter @workspace/agent-dashboard run electron:build
 ```
@@ -82,11 +84,27 @@ pnpm --filter @workspace/agent-dashboard run electron:build:dir
 
 Genera `dist/release/win-unpacked/Nexus Agent.exe`, ejecutable directamente.
 
+**Build â€” bundle web/verificaciÃ³n CI:**
+
+```bash
+pnpm --filter @workspace/agent-dashboard run build
+```
+
+**Tests unitarios:**
+
+```bash
+pnpm --filter @workspace/agent-dashboard run test
+```
+
 **Typecheck:**
 
 ```bash
 pnpm --filter @workspace/agent-dashboard run typecheck
 ```
+
+**Checklist de release:**
+
+Consulta `artifacts/agent-dashboard/RELEASE_CHECKLIST.md`.
 
 ## Cómo funciona Puter
 
@@ -100,8 +118,8 @@ pnpm --filter @workspace/agent-dashboard run typecheck
 |---|---|
 | `nexus:memory` | Memoria acumulada del agente (`AgentMemory`) |
 | `nexus:config` | Objetivo, intervalo y estado isRunning (`AgentConfig`) |
-| `nexus:logs` | Últimos 100 ciclos de actividad (`AgentLog[]`) |
-| `nexus:chat` | Historial de mensajes del chat (`ChatMessage[]`) |
+| `nexus:logs` | Últimos 500 ciclos de actividad (`AgentLog[]`) |
+| `nexus:chat` | Historial de hasta 1000 mensajes (`ChatMessage[]`) |
 | `nexus:log_counter` | Contador de IDs para logs |
 | `nexus:chat_counter` | Contador de IDs para mensajes |
 
@@ -133,10 +151,11 @@ Toda la lógica del agente está encapsulada en un único hook:
 ```ts
 const {
   config, memory, logs, chatMessages,
-  isLoading, needsLogin,
+  isLoading, needsLogin, connectionStatus,
+  activeIssue, recentIssues, retryConnection,
   isRunningCycle, isSendingChat,
   login, runCycle, toggleIsRunning,
   updateConfig, updateMemory, sendChatMessage,
-  resetAgent,
+  reset,
 } = usePuterAgent();
 ```

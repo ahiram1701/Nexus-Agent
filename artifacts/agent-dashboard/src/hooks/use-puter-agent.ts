@@ -1,3 +1,4 @@
+/* Legacy implementation retained for reference.
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { AgentLog, ChatMessage, AgentConfig, AgentMemory } from "@/types/agent";
 import {
@@ -212,3 +213,6 @@ export function usePuterAgent() {
     reset,
   };
 }
+*/
+
+export { usePuterAgent } from "./use-puter-agent-v2";
