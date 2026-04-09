@@ -37,6 +37,7 @@ minimumReleaseAgeExclude:
 
 onlyBuiltDependencies:
   - '@swc/core'
+  - electron
   - esbuild
   - msw
   - unrs-resolver
