@@ -1,0 +1,34 @@
+appId: com.nexusagent.desktop
+productName: Nexus Agent
+copyright: Copyright © 2025 Nexus Agent
+
+directories:
+  output: dist/release
+  buildResources: build-resources
+
+files:
+  - electron/**/*
+  - dist/electron-app/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerLanguages:
+    - en_US
+    - es_ES
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Nexus Agent
+
+portable:
+  artifactName: NexusAgent-portable.exe
